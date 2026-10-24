@@ -13,6 +13,7 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import axios from 'axios';
+import { API_BASE_URL } from '../config';
 
 const { width, height } = Dimensions.get('window');
 
@@ -82,7 +83,7 @@ const ProfileSetupScreen = () => {
     };
 
     try {
-      const response = await axios.post('http://192.168.117.102:5000/profile_setup', profileData);
+      const response = await axios.post(`${API_BASE_URL}/profile_setup`, profileData);
       console.log("✅ Profile setup success:", response.data);
       navigation.navigate('AdditionalProfileScreen', profileData);
     } catch (error) {

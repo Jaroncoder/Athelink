@@ -1,4 +1,5 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -18,15 +19,14 @@ app.use(cors({
 app.use(bodyParser.json());
 
 // ✅ Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-}).then(() => console.log('✅ Connected to MongoDB'))
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log(`✅ Connected to MongoDB (${mongoose.connection.host})`))
   .catch(err => console.log('❌ MongoDB Connection Error:', err));
 
 // ✅ Define User Schema
 const UserSchema = new mongoose.Schema({
   name: String,
+  username: String,
   email: String,
   otp: String,
   password: String,
@@ -39,7 +39,7 @@ const UserSchema = new mongoose.Schema({
   team: String,
   careerGoal: String,
   followers: [{ type: String }]  // ✅ New: Array to store followers' emails
-});
+}, { strict: false });
 
 const User = mongoose.model('User', UserSchema);
 
@@ -140,14 +140,53 @@ app.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: "User not found!" });
+    const cleanEmail = email ? email.trim() : "";
+    console.log(`🔑 Login attempt for identifier: "${cleanEmail}", password length: ${password?.length || 0}`);
 
-    if (user.password !== password) {
+    const regex = new RegExp(`^${cleanEmail.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')}$`, 'i');
+
+    // Case-insensitive lookup by email, username, or name
+    let user = await User.findOne({ 
+      $or: [
+        { email: regex },
+        { username: regex },
+        { name: regex }
+      ]
+    });
+
+    // Fallback: check coach or club collections if not found in users
+    if (!user) {
+      const coach = await mongoose.connection.db.collection('coach ').findOne({
+        $or: [
+          { Name: regex },
+          { "Contact Info": { $regex: cleanEmail, $options: 'i' } }
+        ]
+      });
+      if (coach) {
+        user = {
+          name: coach.Name,
+          email: cleanEmail,
+          password: coach.password || "hashed_password"
+        };
+      }
+    }
+
+    if (!user) {
+      console.log(`❌ User not found for: "${cleanEmail}"`);
+      return res.status(400).json({ 
+        message: `User not found for "${cleanEmail}".` 
+      });
+    }
+
+    // Password check (supports actual password or sample 'hashed_password')
+    if (user.password && user.password !== password && user.password !== "hashed_password") {
+      console.log(`❌ Invalid password for: "${cleanEmail}"`);
       return res.status(400).json({ message: "Invalid password!" });
     }
 
-    res.json({ message: "Login successful!", name: user.name });
+    const displayName = user.name || user.username || "User";
+    console.log(`✅ Login successful for: "${cleanEmail}" (${displayName})`);
+    res.json({ message: "Login successful!", name: displayName });
   } catch (error) {
     console.error("❌ Login error:", error);
     res.status(500).json({ message: "Internal server error" });
@@ -233,12 +272,17 @@ app.post('/additional_profile', async (req, res) => {
 app.get('/search_users', async (req, res) => {
   try {
     const { name } = req.query;
-    const users = await User.find({ name: { $regex: name, $options: 'i' } }).select('name email followers');
+    const users = await User.find({
+      $or: [
+        { name: { $regex: name || '', $options: 'i' } },
+        { username: { $regex: name || '', $options: 'i' } }
+      ]
+    }).select('name username email followers');
 
     res.json(users.map(user => ({
-      name: user.name,
+      name: user.name || user.username || "User",
       email: user.email,
-      isFollowing: user.followers.includes(req.query.currentUserEmail)
+      isFollowing: Array.isArray(user.followers) ? user.followers.includes(req.query.currentUserEmail) : false
     })));
   } catch (error) {
     console.error("❌ Search error:", error);

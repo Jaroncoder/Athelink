@@ -4,6 +4,7 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import axios from 'axios';
+import { API_BASE_URL } from '../config';
 
 const { width, height } = Dimensions.get('window');
 
@@ -31,7 +32,7 @@ const AdditionalProfileScreen = () => {
     console.log("📤 Sending Additional Profile Data:", profileData);
 
     try {
-      const response = await axios.post('http://192.168.117.102:5000/additional_profile', {
+      const response = await axios.post(`${API_BASE_URL}/additional_profile`, {
         email, // ✅ Use email for updating existing user
         ...profileData
       });

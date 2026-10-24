@@ -4,6 +4,7 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import axios from 'axios';
+import { API_BASE_URL } from '../config';
 
 const { width } = Dimensions.get('window');
 
@@ -23,7 +24,7 @@ const HomeScreen = () => {
   // Fetch Users on Search
   useEffect(() => {
     if (searchQuery.length > 0) {
-      axios.get(`http://192.168.117.102:5000/search_users?name=${searchQuery}`)
+      axios.get(`${API_BASE_URL}/search_users?name=${searchQuery}`)
         .then(response => {
           setUsers(response.data);
         })
@@ -38,7 +39,7 @@ const HomeScreen = () => {
   // Handle Follow/Unfollow
   const handleFollowToggle = async (followeeEmail) => {
     try {
-      const response = await axios.post('http://192.168.117.102:5000/follow', {
+      const response = await axios.post(`${API_BASE_URL}/follow`, {
         followerEmail: "loggedInUserEmail@example.com",  // Replace with actual logged-in user
         followeeEmail
       });

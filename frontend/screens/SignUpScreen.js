@@ -4,6 +4,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
+import { API_BASE_URL } from '../config';
 
 const { width, height } = Dimensions.get('window');
 
@@ -38,7 +39,7 @@ const SignUpScreen = () => {
     }
 
     try {
-      const response = await axios.post('http://192.168.117.102:5000/signup', { name, email });
+      const response = await axios.post(`${API_BASE_URL}/signup`, { name, email });
       console.log(response.data);
       setStep(2); // Move to OTP verification step
     } catch (error) {
@@ -57,7 +58,7 @@ const SignUpScreen = () => {
     }
 
     try {
-      const response = await axios.post('http://192.168.117.102:5000/verify_otp', { email, otp: otpCode });
+      const response = await axios.post(`${API_BASE_URL}/verify_otp`, { email, otp: otpCode });
       console.log(response.data);
       setStep(3); // Move to password setup step
     } catch (error) {
@@ -70,7 +71,7 @@ const SignUpScreen = () => {
   const handlePasswordSetup = async () => {
     if (password === confirmPassword) {
       try {
-        const response = await axios.post('http://192.168.117.102:5000/password_setup', { email, password });
+        const response = await axios.post(`${API_BASE_URL}/password_setup`, { email, password });
         console.log(response.data);
         navigation.navigate('ProfileSetup', { name, email });  // ✅ Pass email to Profile Setup
       } catch (error) {

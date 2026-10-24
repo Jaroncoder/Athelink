@@ -6,12 +6,29 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
-import { Video } from 'expo-av';
+import { useVideoPlayer, VideoView } from 'expo-video';
+import { API_BASE_URL } from '../config';
+
+const VideoPreview = ({ uri, style }) => {
+  const player = useVideoPlayer(uri, (playerInstance) => {
+    playerInstance.loop = true;
+    playerInstance.play();
+  });
+
+  return (
+    <VideoView 
+      style={style} 
+      player={player} 
+      allowsFullscreen 
+      nativeControls 
+    />
+  );
+};
 
 const { width } = Dimensions.get('window');
 
 // Updated Backend URL
-const BACKEND_URL = 'http://192.168.117.102:5000';
+const BACKEND_URL = API_BASE_URL;
 
 const PostScreen = () => {
   const navigation = useNavigation();
@@ -127,7 +144,7 @@ const PostScreen = () => {
         {media && (
           <View style={styles.mediaPreview}>
             {media.endsWith('.mp4') || media.endsWith('.mov') ? (
-              <Video source={{ uri: media }} style={styles.media} resizeMode="cover" shouldPlay useNativeControls />
+              <VideoPreview uri={media} style={styles.media} />
             ) : (
               <Image source={{ uri: media }} style={styles.media} />
             )}

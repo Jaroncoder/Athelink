@@ -6,6 +6,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
+import { API_BASE_URL } from '../config';
 
 const { width, height } = Dimensions.get('window');
 
@@ -26,7 +27,10 @@ const LoginScreen = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post('http://192.168.117.102:5000/login', { email, password });
+      const response = await axios.post(`${API_BASE_URL}/login`, { 
+        email: email.trim(), 
+        password 
+      });
 
       // ✅ Extract user name from response
       const userName = response.data.name;
